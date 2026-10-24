@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import ProjectCard from '@/components/ProjectCard';
 import ProjectTableRow from '@/components/ProjectTableRow';
 import ProjectModal from '@/components/ProjectModal';
+import UpcomingModal from '@/components/UpcomingModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import SearchBar from '@/components/SearchBar';
 import SortAndFilter from '@/components/SortAndFilter';
@@ -36,6 +37,7 @@ function ProjectsContent() {
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUpcomingModalOpen, setIsUpcomingModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [deletingProject, setDeletingProject] = useState(null);
   const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
@@ -86,7 +88,10 @@ function ProjectsContent() {
 
   return (
     <div className="min-h-screen bg-[#F5F3EE] flex flex-col lg:flex-row">
-      <Sidebar onOpenAddModal={() => setIsAddModalOpen(true)} />
+      <Sidebar
+        onOpenAddModal={() => setIsAddModalOpen(true)}
+        onOpenUpcomingModal={() => setIsUpcomingModalOpen(true)}
+      />
 
       <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
         {/* Header */}
@@ -279,6 +284,13 @@ function ProjectsContent() {
         projects={projects}
         onClose={() => setIsCSVModalOpen(false)}
         onImportComplete={() => loadProjects()}
+      />
+
+      {/* Quick Create Upcoming Modal */}
+      <UpcomingModal
+        isOpen={isUpcomingModalOpen}
+        defaultVideoType={videoType === 'long' ? 'long' : 'shorts'}
+        onClose={() => setIsUpcomingModalOpen(false)}
       />
     </div>
   );

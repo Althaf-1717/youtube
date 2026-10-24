@@ -20,6 +20,7 @@ import SummaryCard from '@/components/SummaryCard';
 import ProjectCard from '@/components/ProjectCard';
 import ProjectTableRow from '@/components/ProjectTableRow';
 import ProjectModal from '@/components/ProjectModal';
+import UpcomingModal from '@/components/UpcomingModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import SearchBar from '@/components/SearchBar';
 import SortAndFilter from '@/components/SortAndFilter';
@@ -57,6 +58,7 @@ export default function DashboardPage() {
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUpcomingModalOpen, setIsUpcomingModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [deletingProject, setDeletingProject] = useState(null);
   const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
@@ -119,7 +121,10 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#F5F3EE] flex flex-col lg:flex-row">
       {/* Sidebar Navigation */}
-      <Sidebar onOpenAddModal={() => setIsAddModalOpen(true)} />
+      <Sidebar
+        onOpenAddModal={() => setIsAddModalOpen(true)}
+        onOpenUpcomingModal={() => setIsUpcomingModalOpen(true)}
+      />
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
@@ -393,6 +398,13 @@ export default function DashboardPage() {
         onImportComplete={() => {
           loadData();
         }}
+      />
+
+      {/* Quick Create Upcoming Modal */}
+      <UpcomingModal
+        isOpen={isUpcomingModalOpen}
+        defaultVideoType="shorts"
+        onClose={() => setIsUpcomingModalOpen(false)}
       />
     </div>
   );

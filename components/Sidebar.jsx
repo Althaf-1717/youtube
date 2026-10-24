@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from './Toast';
 
-export default function Sidebar({ onOpenAddModal }) {
+export default function Sidebar({ onOpenAddModal, onOpenUpcomingModal }) {
   const pathname = usePathname();
   const router = useRouter();
   const { success, error } = useToast();
@@ -42,7 +42,7 @@ export default function Sidebar({ onOpenAddModal }) {
     }
   };
 
-  const navItems = [
+  const navLinks = [
     {
       label: 'Dashboard',
       href: '/',
@@ -63,20 +63,6 @@ export default function Sidebar({ onOpenAddModal }) {
       badge: 'New',
     },
     {
-      label: 'Add New Project',
-      action: () => {
-        if (onOpenAddModal) {
-          onOpenAddModal();
-        } else {
-          router.push('/projects/new');
-        }
-        setMobileOpen(false);
-      },
-      icon: PlusCircle,
-      isButton: true,
-      highlight: true,
-    },
-    {
       label: 'Recently Updated',
       href: '/projects?sort=recent_updated',
       icon: Clock,
@@ -89,6 +75,24 @@ export default function Sidebar({ onOpenAddModal }) {
       active: pathname === '/settings',
     },
   ];
+
+  const handleCreateUpcoming = () => {
+    if (onOpenUpcomingModal) {
+      onOpenUpcomingModal();
+    } else {
+      router.push('/upcoming?create=true');
+    }
+    setMobileOpen(false);
+  };
+
+  const handleAddProject = () => {
+    if (onOpenAddModal) {
+      onOpenAddModal();
+    } else {
+      router.push('/projects/new');
+    }
+    setMobileOpen(false);
+  };
 
   return (
     <>
@@ -146,54 +150,64 @@ export default function Sidebar({ onOpenAddModal }) {
           </Link>
         </div>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto">
-          {navItems.map((item, index) => {
-            const Icon = item.icon;
+        {/* Action Buttons & Navigation */}
+        <div className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+          {/* Quick Creation Buttons */}
+          <div className="space-y-2 pb-3 border-b border-[#ECEAE4]">
+            <button
+              onClick={handleCreateUpcoming}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#B85535] bg-[#FDF6F5] hover:bg-[#F7EBE6] border border-[#F1D7CE] transition-all shadow-sm"
+              title="Plan a new upcoming video idea with prompts"
+            >
+              <Sparkles className="w-4 h-4 text-[#C96442] shrink-0" />
+              <span>+ Create Upcoming</span>
+            </button>
 
-            if (item.isButton) {
+            <button
+              onClick={handleAddProject}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#C96442] hover:bg-[#B85535] transition-all shadow-subtle"
+              title="Add a published project with video link"
+            >
+              <PlusCircle className="w-4 h-4 text-white shrink-0" />
+              <span>+ Add Project</span>
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="space-y-1">
+            {navLinks.map((item, index) => {
+              const Icon = item.icon;
               return (
-                <button
+                <Link
                   key={index}
-                  onClick={item.action}
-                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-[#C96442] bg-[#F7EBE6] hover:bg-[#F2DFD7] transition-all duration-150 mb-3"
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+                    item.active
+                      ? 'bg-[#ECEAE4] text-[#292825] font-semibold'
+                      : 'text-[#77746D] hover:text-[#292825] hover:bg-[#F5F3EE]'
+                  )}
                 >
-                  <Icon className="w-4 h-4 text-[#C96442]" />
-                  <span>{item.label}</span>
-                </button>
+                  <div className="flex items-center gap-3">
+                    <Icon
+                      className={cn(
+                        'w-4 h-4',
+                        item.active ? 'text-[#C96442]' : 'text-[#77746D]'
+                      )}
+                    />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#F7EBE6] text-[#C96442]">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
               );
-            }
-
-            return (
-              <Link
-                key={index}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                  item.active
-                    ? 'bg-[#ECEAE4] text-[#292825] font-semibold'
-                    : 'text-[#77746D] hover:text-[#292825] hover:bg-[#F5F3EE]'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon
-                    className={cn(
-                      'w-4 h-4',
-                      item.active ? 'text-[#C96442]' : 'text-[#77746D]'
-                    )}
-                  />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#F7EBE6] text-[#C96442]">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+            })}
+          </nav>
+        </div>
 
         {/* User & Logout Footer */}
         <div className="p-4 border-t border-[#DEDAD2] space-y-3">

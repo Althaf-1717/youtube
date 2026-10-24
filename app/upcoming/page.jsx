@@ -25,6 +25,7 @@ import { useToast } from '@/components/Toast';
 function UpcomingContent() {
   const searchParams = useSearchParams();
   const initialType = searchParams.get('type') || 'all';
+  const shouldCreate = searchParams.get('create') === 'true';
 
   const { error: toastError } = useToast();
 
@@ -38,12 +39,18 @@ function UpcomingContent() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
 
   // Modals
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(shouldCreate);
   const [editingItem, setEditingItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
 
   // Projects Modal (from Sidebar action)
   const [isAddProjectModalOpen, setIsAddProjectModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (shouldCreate) {
+      setIsCreateModalOpen(true);
+    }
+  }, [shouldCreate]);
 
   const loadUpcoming = useCallback(async () => {
     try {
@@ -77,7 +84,10 @@ function UpcomingContent() {
 
   return (
     <div className="min-h-screen bg-[#F5F3EE] flex flex-col lg:flex-row">
-      <Sidebar onOpenAddModal={() => setIsAddProjectModalOpen(true)} />
+      <Sidebar
+        onOpenAddModal={() => setIsAddProjectModalOpen(true)}
+        onOpenUpcomingModal={() => setIsCreateModalOpen(true)}
+      />
 
       <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
         {/* Header */}
