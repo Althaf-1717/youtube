@@ -73,6 +73,13 @@ export default function ProjectModal({
 
   const setVideoType = (type) => {
     setFormData((prev) => ({ ...prev, video_type: type }));
+    if (errors.video_number) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.video_number;
+        return next;
+      });
+    }
   };
 
   const validate = async () => {
@@ -87,6 +94,7 @@ export default function ProjectModal({
     setCheckingNumber(true);
     const { available, error: uniqueErr } = await checkVideoNumberAvailable(
       parsedNum,
+      formData.video_type,
       project?.id || null
     );
     setCheckingNumber(false);

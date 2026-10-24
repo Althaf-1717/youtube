@@ -31,6 +31,11 @@ ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS project_date DATE DEFAULT C
 UPDATE public.projects SET video_type = 'shorts' WHERE video_type IS NULL OR video_type = '';
 UPDATE public.projects SET project_date = CURRENT_DATE WHERE project_date IS NULL;
 
+-- Remove global unique constraint so Shorts and Long Videos have independent numbering (e.g. Short 1 & Long 1)
+ALTER TABLE public.projects DROP CONSTRAINT IF EXISTS unique_video_number;
+ALTER TABLE public.projects DROP CONSTRAINT IF EXISTS projects_video_number_key;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_type_number ON public.projects(video_type, video_number);
+
 -- 3. Projects Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_projects_video_number ON public.projects(video_number ASC);
 CREATE INDEX IF NOT EXISTS idx_projects_video_type ON public.projects(video_type);

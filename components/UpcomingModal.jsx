@@ -1,7 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, AlertCircle, Sparkles, Send, Trash2, Zap, Film, ExternalLink } from 'lucide-react';
+import {
+  X,
+  Loader2,
+  AlertCircle,
+  Sparkles,
+  Send,
+  Zap,
+  Film,
+  Copy,
+  Check,
+} from 'lucide-react';
 import { parseVideoNumber, validateUpcomingForm, isValidUrl } from '@/lib/utils';
 import {
   createUpcoming,
@@ -21,7 +31,7 @@ export default function UpcomingModal({
   onSuccess,
 }) {
   const isEdit = Boolean(upcomingItem?.id);
-  const { success, error, info } = useToast();
+  const { success, error } = useToast();
 
   const getTodayDate = () => new Date().toISOString().split('T')[0];
 
@@ -39,6 +49,10 @@ export default function UpcomingModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingNumber, setCheckingNumber] = useState(false);
   const [projectConflictError, setProjectConflictError] = useState(null);
+
+  // Copy buttons state
+  const [copiedAudio, setCopiedAudio] = useState(false);
+  const [copiedEdit, setCopiedEdit] = useState(false);
 
   // Submit to projects flow state
   const [showSubmitPrompt, setShowSubmitPrompt] = useState(false);
@@ -74,10 +88,49 @@ export default function UpcomingModal({
       setShowSubmitPrompt(false);
       setSubmissionUrl('');
       setSubmitUrlError('');
+      setCopiedAudio(false);
+      setCopiedEdit(false);
     }
   }, [isOpen, upcomingItem, defaultVideoType]);
 
   if (!isOpen) return null;
+
+  const runValidationCheck = async (videoNumStr, type) => {
+    const parsedNum = parseVideoNumber(videoNumStr);
+    if (!parsedNum) {
+      setProjectConflictError(null);
+      return;
+    }
+
+    setCheckingNumber(true);
+    try {
+      // 1. Strict check against Projects table for THIS section
+      const projectCheck = await checkConflictWithProjects(parsedNum, type);
+      if (projectCheck.conflict) {
+        const sectionLabel = type === 'long' ? 'Long Videos' : 'Shorts';
+        setProjectConflictError(
+          `Video ${parsedNum} is already published in ${sectionLabel} Projects ("${projectCheck.project.title}"). You cannot use this number!`
+        );
+        return;
+      } else {
+        setProjectConflictError(null);
+      }
+
+      // 2. Check against Upcoming table for THIS section
+      const availCheck = await checkUpcomingNumberAvailable(
+        parsedNum,
+        type,
+        upcomingItem?.id || null
+      );
+      if (!availCheck.available) {
+        setErrors((prev) => ({ ...prev, video_number: availCheck.error }));
+      }
+    } catch {
+      // ignore check error
+    } finally {
+      setCheckingNumber(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -96,32 +149,49 @@ export default function UpcomingModal({
     }
   };
 
-  const handleVideoNumberBlur = async () => {
-    const parsedNum = parseVideoNumber(formData.video_number);
-    if (!parsedNum) return;
+  const handleSelectType = (newType) => {
+    setFormData((prev) => ({ ...prev, video_type: newType }));
+    setProjectConflictError(null);
+    if (formData.video_number) {
+      runValidationCheck(formData.video_number, newType);
+    }
+  };
 
-    setCheckingNumber(true);
+  const handleVideoNumberBlur = () => {
+    if (formData.video_number) {
+      runValidationCheck(formData.video_number, formData.video_type);
+    }
+  };
+
+  const handleCopyAudioPrompt = async (e) => {
+    e.preventDefault();
+    if (!formData.audio_prompt) {
+      error('No audio prompt to copy.');
+      return;
+    }
     try {
-      // 1. Strict check against Projects table
-      const projectCheck = await checkConflictWithProjects(parsedNum);
-      if (projectCheck.conflict) {
-        setProjectConflictError(
-          `Video ${parsedNum} is already published in Projects ("${projectCheck.project.title}"). You cannot use this number!`
-        );
-        return;
-      } else {
-        setProjectConflictError(null);
-      }
-
-      // 2. Check against Upcoming table
-      const availCheck = await checkUpcomingNumberAvailable(parsedNum, upcomingItem?.id || null);
-      if (!availCheck.available) {
-        setErrors((prev) => ({ ...prev, video_number: availCheck.error }));
-      }
+      await navigator.clipboard.writeText(formData.audio_prompt);
+      setCopiedAudio(true);
+      success('Copied Audio Prompt to clipboard!');
+      setTimeout(() => setCopiedAudio(false), 2000);
     } catch {
-      // ignore check error
-    } finally {
-      setCheckingNumber(false);
+      error('Failed to copy to clipboard.');
+    }
+  };
+
+  const handleCopyEditPrompt = async (e) => {
+    e.preventDefault();
+    if (!formData.edit_prompt) {
+      error('No edit prompt to copy.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(formData.edit_prompt);
+      setCopiedEdit(true);
+      success('Copied Edit Prompt to clipboard!');
+      setTimeout(() => setCopiedEdit(false), 2000);
+    } catch {
+      error('Failed to copy to clipboard.');
     }
   };
 
@@ -133,18 +203,24 @@ export default function UpcomingModal({
     }
 
     const parsedNum = parseVideoNumber(formData.video_number);
+    const resolvedType = formData.video_type === 'long' ? 'long' : 'shorts';
+    const sectionLabel = resolvedType === 'shorts' ? 'Shorts' : 'Long Videos';
 
-    // Strict project conflict check
-    const projectCheck = await checkConflictWithProjects(parsedNum);
+    // Strict project conflict check for THIS section
+    const projectCheck = await checkConflictWithProjects(parsedNum, resolvedType);
     if (projectCheck.conflict) {
       setProjectConflictError(
-        `Video ${parsedNum} is already published in Projects ("${projectCheck.project.title}"). You cannot save or submit with this number!`
+        `Video ${parsedNum} is already published in ${sectionLabel} Projects ("${projectCheck.project.title}"). You cannot save or submit with this number!`
       );
       return false;
     }
 
-    // Upcoming uniqueness check
-    const availCheck = await checkUpcomingNumberAvailable(parsedNum, upcomingItem?.id || null);
+    // Upcoming uniqueness check for THIS section
+    const availCheck = await checkUpcomingNumberAvailable(
+      parsedNum,
+      resolvedType,
+      upcomingItem?.id || null
+    );
     if (!availCheck.available) {
       setErrors((prev) => ({ ...prev, video_number: availCheck.error }));
       return false;
@@ -217,7 +293,6 @@ export default function UpcomingModal({
 
   // Submit to Projects Flow
   const handleStartSubmitToProjects = async () => {
-    // Validate first
     const isValid = await validate();
     if (!isValid) return;
 
@@ -291,7 +366,7 @@ export default function UpcomingModal({
                 {isEdit ? `Edit Upcoming Video ${upcomingItem.video_number}` : 'Create Upcoming Video Idea'}
               </h2>
               <p className="text-xs text-[#77746D]">
-                Plan video prompts, notes, and submit directly to Projects when ready.
+                Separate numbering for Shorts & Long Videos. Copy prompts with 1 click.
               </p>
             </div>
           </div>
@@ -393,7 +468,7 @@ export default function UpcomingModal({
               <div className="grid grid-cols-2 gap-3 p-1 bg-[#FAF8F5] border border-[#DEDAD2] rounded-xl">
                 <button
                   type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, video_type: 'shorts' }))}
+                  onClick={() => handleSelectType('shorts')}
                   className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
                     formData.video_type === 'shorts'
                       ? 'bg-[#C96442] text-white shadow-sm'
@@ -405,7 +480,7 @@ export default function UpcomingModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, video_type: 'long' }))}
+                  onClick={() => handleSelectType('long')}
                   className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
                     formData.video_type === 'long'
                       ? 'bg-[#C96442] text-white shadow-sm'
@@ -416,6 +491,9 @@ export default function UpcomingModal({
                   <span>🎬 Long Video</span>
                 </button>
               </div>
+              <p className="text-[11px] text-[#77746D] mt-1.5">
+                Numbering is independent per section (e.g., Short Video 1 and Long Video 1 are separate).
+              </p>
             </div>
 
             {/* Video Number & Target Date Row */}
@@ -428,7 +506,7 @@ export default function UpcomingModal({
                   >
                     Video Number <span className="text-[#C96442]">*</span>
                   </label>
-                  <span className="text-[11px] text-[#77746D]">e.g. 9 or Video 9</span>
+                  <span className="text-[11px] text-[#77746D]">e.g. 1, 9, or Video 1</span>
                 </div>
                 <div className="relative">
                   <input
@@ -438,7 +516,7 @@ export default function UpcomingModal({
                     value={formData.video_number}
                     onChange={handleChange}
                     onBlur={handleVideoNumberBlur}
-                    placeholder="e.g. 9 or Video 9"
+                    placeholder="e.g. 1 or Video 1"
                     className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-medium transition-all ${
                       errors.video_number || projectConflictError
                         ? 'border-[#C96442] bg-[#FDF6F5]'
@@ -497,7 +575,7 @@ export default function UpcomingModal({
                 type="text"
                 value={formData.title}
                 onChange={handleChange}
-                placeholder="e.g. 5 AI Tools That Feel Illegal to Know #Shorts"
+                placeholder="e.g. 5 AI Tools That Feel Illegal to Know"
                 className={`w-full px-3.5 py-2.5 rounded-xl border text-sm transition-all ${
                   errors.title
                     ? 'border-[#C96442] bg-[#FDF6F5]'
@@ -514,7 +592,7 @@ export default function UpcomingModal({
               )}
             </div>
 
-            {/* Audio Prompt */}
+            {/* Audio Prompt with Copy Button */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label
@@ -523,7 +601,25 @@ export default function UpcomingModal({
                 >
                   Audio Prompt (Voiceover / Music)
                 </label>
-                <span className="text-[11px] text-[#77746D]">Voice style, ElevenLabs, BGM cues</span>
+                {formData.audio_prompt && (
+                  <button
+                    type="button"
+                    onClick={handleCopyAudioPrompt}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C96442] hover:text-[#B85535] px-2 py-0.5 rounded bg-[#F7EBE6] hover:bg-[#F2DFD7] transition-colors"
+                  >
+                    {copiedAudio ? (
+                      <>
+                        <Check className="w-3 h-3" />
+                        <span>Copied Audio!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy Audio Prompt</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
               <textarea
                 id="upcoming_audio_prompt"
@@ -537,7 +633,7 @@ export default function UpcomingModal({
               />
             </div>
 
-            {/* Edit Prompt */}
+            {/* Edit Prompt with Copy Button */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label
@@ -546,7 +642,25 @@ export default function UpcomingModal({
                 >
                   Edit Prompt (CapCut / Premiere / Visuals)
                 </label>
-                <span className="text-[11px] text-[#77746D]">Visual hook, captions, transitions</span>
+                {formData.edit_prompt && (
+                  <button
+                    type="button"
+                    onClick={handleCopyEditPrompt}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#77746D] hover:text-[#292825] px-2 py-0.5 rounded bg-[#ECEAE4] hover:bg-[#E2DFD7] transition-colors"
+                  >
+                    {copiedEdit ? (
+                      <>
+                        <Check className="w-3 h-3 text-[#C96442]" />
+                        <span className="text-[#C96442]">Copied Edit!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy Edit Prompt</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
               <textarea
                 id="upcoming_edit_prompt"

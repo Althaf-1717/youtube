@@ -83,7 +83,45 @@ assert(shortsOnly.length === 3, 'Shorts filtering extracts only shorts');
 const longOnly = library.filter((p) => p.video_type === 'long');
 assert(longOnly.length === 1 && longOnly[0].video_number === 2, 'Long video filtering extracts only long videos');
 
-console.log('\n--- 6. Testing CSV with Video Types and Dates ---');
+console.log('\n--- 6. Testing Section Scoped Numbering & Conflict Rules ---');
+// In projects: Short Video 1 and Long Video 1 can both exist
+const sampleProjects = [
+  { id: '1', video_number: 1, video_type: 'shorts', title: 'Short 1' },
+  { id: '2', video_number: 1, video_type: 'long', title: 'Long 1' },
+];
+
+// Conflict function simulating scoped check
+function hasProjectConflict(videoNum, videoType, projects) {
+  return projects.some(
+    (p) => p.video_number === videoNum && (p.video_type || 'shorts') === videoType
+  );
+}
+
+// 1. In Upcoming Shorts, Video 1 should conflict with Projects Shorts
+assert(
+  hasProjectConflict(1, 'shorts', sampleProjects) === true,
+  'Upcoming Shorts Video 1 conflicts with Projects Shorts Video 1'
+);
+
+// 2. In Upcoming Shorts, Video 2 does NOT conflict (only 1 exists)
+assert(
+  hasProjectConflict(2, 'shorts', sampleProjects) === false,
+  'Upcoming Shorts Video 2 does not conflict'
+);
+
+// 3. In Upcoming Long Videos, Video 1 conflicts with Projects Long Video 1
+assert(
+  hasProjectConflict(1, 'long', sampleProjects) === true,
+  'Upcoming Long Video 1 conflicts with Projects Long Video 1'
+);
+
+// 4. In Upcoming Long Videos, Video 2 does NOT conflict
+assert(
+  hasProjectConflict(2, 'long', sampleProjects) === false,
+  'Upcoming Long Video 2 does not conflict'
+);
+
+console.log('\n--- 7. Testing CSV with Video Types and Dates ---');
 const sample = [
   {
     video_number: 1,

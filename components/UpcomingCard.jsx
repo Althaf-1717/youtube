@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Calendar,
   Edit3,
@@ -9,12 +9,50 @@ import {
   Headphones,
   Film,
   Zap,
-  AlignLeft,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { formatVideoNumber, formatDate } from '@/lib/utils';
+import { useToast } from './Toast';
 
-export default function UpcomingCard({ item, onEdit, onDelete, onSubmitToProjects }) {
+export default function UpcomingCard({ item, onEdit, onDelete }) {
+  const { success, error } = useToast();
   const isShort = item.video_type !== 'long';
+
+  const [copiedAudio, setCopiedAudio] = useState(false);
+  const [copiedEdit, setCopiedEdit] = useState(false);
+
+  const handleCopyAudio = async (e) => {
+    e.stopPropagation();
+    if (!item.audio_prompt) {
+      error('No audio prompt to copy.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(item.audio_prompt);
+      setCopiedAudio(true);
+      success(`Copied Audio Prompt for Video ${item.video_number}`);
+      setTimeout(() => setCopiedAudio(false), 2000);
+    } catch {
+      error('Failed to copy to clipboard.');
+    }
+  };
+
+  const handleCopyEdit = async (e) => {
+    e.stopPropagation();
+    if (!item.edit_prompt) {
+      error('No edit prompt to copy.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(item.edit_prompt);
+      setCopiedEdit(true);
+      success(`Copied Edit Prompt for Video ${item.video_number}`);
+      setTimeout(() => setCopiedEdit(false), 2000);
+    } catch {
+      error('Failed to copy to clipboard.');
+    }
+  };
 
   return (
     <div
@@ -65,27 +103,67 @@ export default function UpcomingCard({ item, onEdit, onDelete, onSubmitToProject
           {item.title}
         </h3>
 
-        {/* Audio Prompt Snippet (if available) */}
+        {/* Audio Prompt Box with Copy Button */}
         {item.audio_prompt && (
-          <div className="p-2.5 rounded-xl bg-[#FAF8F5] border border-[#ECEAE4] text-xs space-y-1">
-            <div className="flex items-center gap-1.5 text-[#C96442] font-semibold text-[11px] uppercase tracking-wide">
-              <Headphones className="w-3 h-3" />
-              <span>Audio Prompt</span>
+          <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#ECEAE4] text-xs space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[#C96442] font-semibold text-[11px] uppercase tracking-wide">
+                <Headphones className="w-3.5 h-3.5" />
+                <span>Audio Prompt</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyAudio}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#77746D] hover:text-[#C96442] px-2 py-0.5 rounded bg-white border border-[#DEDAD2] hover:border-[#C96442] transition-colors"
+                title="Copy Audio Prompt to clipboard"
+              >
+                {copiedAudio ? (
+                  <>
+                    <Check className="w-3 h-3 text-[#C96442]" />
+                    <span className="text-[#C96442]">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Copy Audio</span>
+                  </>
+                )}
+              </button>
             </div>
-            <p className="text-[#4D4B46] line-clamp-2 leading-relaxed">
+            <p className="text-[#4D4B46] line-clamp-3 leading-relaxed whitespace-pre-wrap">
               {item.audio_prompt}
             </p>
           </div>
         )}
 
-        {/* Edit Prompt Snippet (if available) */}
+        {/* Edit Prompt Box with Copy Button */}
         {item.edit_prompt && (
-          <div className="p-2.5 rounded-xl bg-[#FAF8F5] border border-[#ECEAE4] text-xs space-y-1">
-            <div className="flex items-center gap-1.5 text-[#77746D] font-semibold text-[11px] uppercase tracking-wide">
-              <Film className="w-3 h-3" />
-              <span>Edit Prompt</span>
+          <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#ECEAE4] text-xs space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[#77746D] font-semibold text-[11px] uppercase tracking-wide">
+                <Film className="w-3.5 h-3.5" />
+                <span>Edit Prompt</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyEdit}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#77746D] hover:text-[#292825] px-2 py-0.5 rounded bg-white border border-[#DEDAD2] hover:border-[#292825] transition-colors"
+                title="Copy Edit Prompt to clipboard"
+              >
+                {copiedEdit ? (
+                  <>
+                    <Check className="w-3 h-3 text-[#C96442]" />
+                    <span className="text-[#C96442]">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Copy Edit</span>
+                  </>
+                )}
+              </button>
             </div>
-            <p className="text-[#4D4B46] line-clamp-2 leading-relaxed">
+            <p className="text-[#4D4B46] line-clamp-3 leading-relaxed whitespace-pre-wrap">
               {item.edit_prompt}
             </p>
           </div>
@@ -93,7 +171,7 @@ export default function UpcomingCard({ item, onEdit, onDelete, onSubmitToProject
 
         {/* Description / Notes snippet (if no prompts or short) */}
         {!item.audio_prompt && !item.edit_prompt && item.description && (
-          <p className="text-xs text-[#77746D] line-clamp-3">
+          <p className="text-xs text-[#77746D] line-clamp-3 leading-relaxed">
             {item.description}
           </p>
         )}
@@ -108,11 +186,11 @@ export default function UpcomingCard({ item, onEdit, onDelete, onSubmitToProject
 
         <button
           onClick={() => onEdit(item)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#DEDAD2] text-[#292825] hover:bg-[#C96442] hover:text-white hover:border-[#C96442] font-medium transition-all group/btn"
-          title="Submit to Projects"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#DEDAD2] text-[#292825] hover:bg-[#C96442] hover:text-white hover:border-[#C96442] font-semibold text-xs transition-all group/btn"
+          title="Edit or submit to Projects"
         >
           <Send className="w-3 h-3 transition-transform group-hover/btn:translate-x-0.5" />
-          <span>Submit</span>
+          <span>Edit / Submit</span>
         </button>
       </div>
     </div>

@@ -42,6 +42,13 @@ export default function NewProjectPage() {
 
   const setVideoType = (type) => {
     setFormData((prev) => ({ ...prev, video_type: type }));
+    if (errors.video_number) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.video_number;
+        return next;
+      });
+    }
   };
 
   const validate = async () => {
@@ -53,7 +60,10 @@ export default function NewProjectPage() {
 
     const parsedNum = parseVideoNumber(formData.video_number);
     setCheckingNumber(true);
-    const { available, error: uniqueErr } = await checkVideoNumberAvailable(parsedNum);
+    const { available, error: uniqueErr } = await checkVideoNumberAvailable(
+      parsedNum,
+      formData.video_type
+    );
     setCheckingNumber(false);
 
     if (!available) {
