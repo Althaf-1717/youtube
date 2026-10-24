@@ -20,7 +20,10 @@ export default function LoginPage() {
     // Check if Supabase keys are configured
     const hasKeys =
       Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-      Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+      Boolean(
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+          process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+      );
     setIsConfigured(hasKeys);
   }, []);
 
