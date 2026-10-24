@@ -18,12 +18,9 @@ export default function ProjectModal({
   const [formData, setFormData] = useState({
     video_number: '',
     title: '',
-    description: '',
     video_url: '',
-    tags: [],
   });
 
-  const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingNumber, setCheckingNumber] = useState(false);
@@ -35,20 +32,15 @@ export default function ProjectModal({
         setFormData({
           video_number: project.video_number ? `Video ${project.video_number}` : '',
           title: project.title ?? '',
-          description: project.description ?? '',
           video_url: project.video_url ?? '',
-          tags: Array.isArray(project.tags) ? project.tags : [],
         });
       } else {
         setFormData({
           video_number: '',
           title: '',
-          description: '',
           video_url: '',
-          tags: [],
         });
       }
-      setTagInput('');
       setErrors({});
     }
   }, [isOpen, project]);
@@ -66,27 +58,6 @@ export default function ProjectModal({
         return next;
       });
     }
-  };
-
-  const handleAddTag = (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const trimmed = tagInput.trim().replace(/^#/, '');
-      if (trimmed && !formData.tags.includes(trimmed)) {
-        setFormData((prev) => ({
-          ...prev,
-          tags: [...prev.tags, trimmed],
-        }));
-      }
-      setTagInput('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((t) => t !== tagToRemove),
-    }));
   };
 
   const validate = async () => {
@@ -130,7 +101,8 @@ export default function ProjectModal({
     try {
       if (isEdit) {
         const res = await updateProject(project.id, {
-          ...formData,
+          title: formData.title,
+          video_url: formData.video_url,
           video_number: parsedNum,
         });
         if (res.error) {
@@ -143,7 +115,8 @@ export default function ProjectModal({
         onClose();
       } else {
         const res = await createProject({
-          ...formData,
+          title: formData.title,
+          video_url: formData.video_url,
           video_number: parsedNum,
         });
         if (res.error) {
@@ -159,11 +132,8 @@ export default function ProjectModal({
           setFormData({
             video_number: `Video ${nextNum}`,
             title: '',
-            description: '',
             video_url: '',
-            tags: [],
           });
-          setTagInput('');
           setErrors({});
         } else {
           onClose();
@@ -182,7 +152,7 @@ export default function ProjectModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl bg-white rounded-2xl shadow-modal border border-[#DEDAD2] overflow-hidden my-8"
+        className="relative w-full max-w-lg bg-white rounded-2xl shadow-modal border border-[#DEDAD2] overflow-hidden my-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -193,7 +163,7 @@ export default function ProjectModal({
             </h2>
             <p className="text-xs text-[#77746D] mt-0.5">
               {isEdit
-                ? 'Update video details, resource link, or ordering'
+                ? 'Update video number, title, or link'
                 : 'Enter your YouTube video number, title, and link'}
             </p>
           </div>
@@ -265,7 +235,7 @@ export default function ProjectModal({
               type="text"
               value={formData.title}
               onChange={handleChange}
-              placeholder="e.g. Python Variables & Data Types Explained in Telugu"
+              placeholder="e.g. Canva Tutorial for Beginners #Shorts"
               className={`w-full px-3.5 py-2.5 rounded-xl border text-sm transition-all ${
                 errors.title
                   ? 'border-[#C96442] bg-[#FDF6F5]'
@@ -296,7 +266,7 @@ export default function ProjectModal({
               type="url"
               value={formData.video_url}
               onChange={handleChange}
-              placeholder="https://www.youtube.com/watch?v=..."
+              placeholder="https://www.youtube.com/watch?v=... or https://youtube.com/shorts/..."
               className={`w-full px-3.5 py-2.5 rounded-xl border text-sm transition-all ${
                 errors.video_url
                   ? 'border-[#C96442] bg-[#FDF6F5]'
@@ -311,63 +281,6 @@ export default function ProjectModal({
                 <span>{errors.video_url}</span>
               </p>
             )}
-          </div>
-
-          {/* Project Description */}
-          <div>
-            <label
-              htmlFor="description"
-              className="block text-xs font-semibold uppercase tracking-wider text-[#292825] mb-1.5"
-            >
-              Description <span className="text-[#77746D] font-normal lowercase">(optional)</span>
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              rows="3"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Key concepts, timestamps, reference resources, or code notes..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#DEDAD2] bg-white text-sm transition-all hover:border-[#C4BFB5]"
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* Tags */}
-          <div>
-            <label
-              htmlFor="tags"
-              className="block text-xs font-semibold uppercase tracking-wider text-[#292825] mb-1.5"
-            >
-              Tags <span className="text-[#77746D] font-normal lowercase">(press Enter or comma)</span>
-            </label>
-            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl border border-[#DEDAD2] bg-white min-h-[44px]">
-              {formData.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#ECEAE4] text-[#292825]"
-                >
-                  #{tag}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="hover:text-[#C96442]"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-              <input
-                id="tags"
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleAddTag}
-                placeholder={formData.tags.length === 0 ? 'e.g. Python, Variables, Beginners' : ''}
-                className="flex-1 min-w-[120px] bg-transparent text-sm border-none focus:ring-0 focus:outline-none p-1 !shadow-none"
-                disabled={isSubmitting}
-              />
-            </div>
           </div>
 
           {/* Footer Actions */}

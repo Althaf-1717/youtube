@@ -10,7 +10,7 @@ import {
   Calendar,
   Clock,
 } from 'lucide-react';
-import { formatVideoNumber, formatDate, isValidUrl, extractYouTubeId } from '@/lib/utils';
+import { formatVideoNumber, formatDate, isValidUrl } from '@/lib/utils';
 import { useToast } from './Toast';
 
 export default function ProjectCard({ project, onEdit, onDelete }) {
@@ -50,7 +50,7 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
     >
       <div>
         {/* Top Header: Video Number Badge & Quick Actions */}
-        <div className="flex items-start justify-between gap-3 mb-3.5">
+        <div className="flex items-start justify-between gap-3 mb-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#F7EBE6] border border-[#F1D7CE] text-[#C96442] font-semibold text-xs tracking-wide">
             <span>{formatVideoNumber(project.video_number)}</span>
           </div>
@@ -87,62 +87,33 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
         </div>
 
         {/* Project Title */}
-        <h3 className="font-semibold text-lg text-[#292825] group-hover:text-[#C96442] transition-colors leading-snug line-clamp-2 mb-2">
+        <h3 className="font-semibold text-lg text-[#292825] group-hover:text-[#C96442] transition-colors leading-snug line-clamp-3 mb-4">
           {project.title}
         </h3>
-
-        {/* Project Description */}
-        {project.description ? (
-          <p className="text-sm text-[#77746D] line-clamp-3 leading-relaxed mb-4 whitespace-pre-line">
-            {project.description}
-          </p>
-        ) : (
-          <p className="text-sm text-[#77746D]/60 italic mb-4">No description provided</p>
-        )}
       </div>
 
       {/* Footer Details */}
-      <div className="pt-4 border-t border-[#ECEAE4] space-y-3">
-        {/* Tags */}
-        {Array.isArray(project.tags) && project.tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {project.tags.slice(0, 4).map((tag, idx) => (
-              <span
-                key={idx}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#F5F3EE] text-[#77746D] border border-[#DEDAD2]"
-              >
-                #{tag}
-              </span>
-            ))}
-            {project.tags.length > 4 && (
-              <span className="text-[11px] text-[#77746D]">+{project.tags.length - 4}</span>
-            )}
-          </div>
-        )}
-
-        {/* Dates & Action Row */}
-        <div className="flex items-center justify-between text-xs text-[#77746D] pt-1">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1" title="Created date">
-              <Calendar className="w-3.5 h-3.5" />
-              {formatDate(project.created_at)}
+      <div className="pt-4 border-t border-[#ECEAE4] flex items-center justify-between text-xs text-[#77746D]">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1" title="Created date">
+            <Calendar className="w-3.5 h-3.5" />
+            {formatDate(project.created_at)}
+          </span>
+          {project.updated_at && project.updated_at !== project.created_at && (
+            <span className="hidden sm:flex items-center gap-1" title="Last updated">
+              <Clock className="w-3.5 h-3.5" />
+              Updated {formatDate(project.updated_at)}
             </span>
-            {project.updated_at && project.updated_at !== project.created_at && (
-              <span className="hidden sm:flex items-center gap-1" title="Last updated">
-                <Clock className="w-3.5 h-3.5" />
-                Updated {formatDate(project.updated_at)}
-              </span>
-            )}
-          </div>
-
-          <button
-            onClick={handleOpenVideo}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#C96442] hover:text-[#B85535] group/btn transition-colors"
-          >
-            <span>Open Video</span>
-            <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
-          </button>
+          )}
         </div>
+
+        <button
+          onClick={handleOpenVideo}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#C96442] hover:text-[#B85535] group/btn transition-colors"
+        >
+          <span>Open Video</span>
+          <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+        </button>
       </div>
     </div>
   );

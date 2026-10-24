@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, AlertCircle, X } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { validateProjectForm, parseVideoNumber } from '@/lib/utils';
 import { createProject, checkVideoNumberAvailable } from '@/lib/api/projects';
@@ -16,12 +16,9 @@ export default function NewProjectPage() {
   const [formData, setFormData] = useState({
     video_number: '',
     title: '',
-    description: '',
     video_url: '',
-    tags: [],
   });
 
-  const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingNumber, setCheckingNumber] = useState(false);
@@ -37,27 +34,6 @@ export default function NewProjectPage() {
         return next;
       });
     }
-  };
-
-  const handleAddTag = (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const trimmed = tagInput.trim().replace(/^#/, '');
-      if (trimmed && !formData.tags.includes(trimmed)) {
-        setFormData((prev) => ({
-          ...prev,
-          tags: [...prev.tags, trimmed],
-        }));
-      }
-      setTagInput('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((t) => t !== tagToRemove),
-    }));
   };
 
   const validate = async () => {
@@ -96,7 +72,8 @@ export default function NewProjectPage() {
 
     try {
       const res = await createProject({
-        ...formData,
+        title: formData.title,
+        video_url: formData.video_url,
         video_number: parsedNum,
       });
       if (res.error) {
@@ -112,11 +89,8 @@ export default function NewProjectPage() {
         setFormData({
           video_number: `Video ${nextNum}`,
           title: '',
-          description: '',
           video_url: '',
-          tags: [],
         });
-        setTagInput('');
         setErrors({});
       } else {
         router.push('/projects');
@@ -132,7 +106,7 @@ export default function NewProjectPage() {
     <div className="min-h-screen bg-[#F5F3EE] flex flex-col lg:flex-row">
       <Sidebar />
 
-      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
+      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-6 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 pb-3 border-b border-[#DEDAD2]">
           <Link
             href="/projects"
@@ -145,7 +119,7 @@ export default function NewProjectPage() {
               Add New Project
             </h1>
             <p className="text-xs text-[#77746D]">
-              Record video details, resource links, and tags for your YouTube library.
+              Record your video number, title, and link for your YouTube library.
             </p>
           </div>
         </div>
@@ -207,7 +181,7 @@ export default function NewProjectPage() {
                 type="text"
                 value={formData.title}
                 onChange={handleChange}
-                placeholder="e.g. Python Variables Explained in Telugu"
+                placeholder="e.g. Canva Tutorial for Beginners #Shorts"
                 className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
                   errors.title
                     ? 'border-[#C96442] bg-[#FDF6F5]'
@@ -237,7 +211,7 @@ export default function NewProjectPage() {
                 type="url"
                 value={formData.video_url}
                 onChange={handleChange}
-                placeholder="https://www.youtube.com/watch?v=..."
+                placeholder="https://www.youtube.com/watch?v=... or https://youtube.com/shorts/..."
                 className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
                   errors.video_url
                     ? 'border-[#C96442] bg-[#FDF6F5]'
@@ -252,61 +226,6 @@ export default function NewProjectPage() {
                   <span>{errors.video_url}</span>
                 </p>
               )}
-            </div>
-
-            <div>
-              <label
-                htmlFor="description"
-                className="block text-xs font-semibold uppercase tracking-wider text-[#292825] mb-1.5"
-              >
-                Description <span className="text-[#77746D] font-normal lowercase">(optional)</span>
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                rows="4"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Key concepts, video chapters, resources, or code links..."
-                className="w-full px-4 py-2.5 rounded-xl border border-[#DEDAD2] bg-white text-sm transition-all hover:border-[#C4BFB5]"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="tags"
-                className="block text-xs font-semibold uppercase tracking-wider text-[#292825] mb-1.5"
-              >
-                Tags <span className="text-[#77746D] font-normal lowercase">(press Enter or comma)</span>
-              </label>
-              <div className="flex flex-wrap items-center gap-1.5 p-2.5 rounded-xl border border-[#DEDAD2] bg-white min-h-[46px]">
-                {formData.tags.map((tag, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#ECEAE4] text-[#292825]"
-                  >
-                    #{tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="hover:text-[#C96442]"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  id="tags"
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleAddTag}
-                  placeholder={formData.tags.length === 0 ? 'Type tag and press enter...' : ''}
-                  className="flex-1 min-w-[140px] bg-transparent text-sm border-none focus:ring-0 focus:outline-none p-1 !shadow-none"
-                  disabled={isSubmitting}
-                />
-              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-[#ECEAE4]">

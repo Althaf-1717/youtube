@@ -12,7 +12,7 @@ export default function SearchBar({
   onClear,
   onKeyDown,
   totalResults = null,
-  placeholder = 'Search by video number (e.g. 1, 10), title, or keywords...',
+  placeholder = 'Search by video number (e.g. 1, 10) or title...',
 }) {
   return (
     <div className="w-full flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">

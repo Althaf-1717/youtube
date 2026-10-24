@@ -46,38 +46,15 @@ export default function ProjectTableRow({ project, onEdit, onDelete }) {
         </span>
       </td>
 
-      {/* Title & Description */}
-      <td className="py-4 px-4 max-w-sm sm:max-w-lg">
-        <div className="font-semibold text-sm text-[#292825] group-hover:text-[#C96442] transition-colors line-clamp-1">
+      {/* Title */}
+      <td className="py-4 px-4 max-w-md sm:max-w-xl">
+        <div className="font-semibold text-sm text-[#292825] group-hover:text-[#C96442] transition-colors line-clamp-2">
           {project.title}
-        </div>
-        {project.description && (
-          <div className="text-xs text-[#77746D] line-clamp-1 mt-0.5">
-            {project.description}
-          </div>
-        )}
-      </td>
-
-      {/* Tags */}
-      <td className="py-4 px-4 hidden md:table-cell">
-        <div className="flex flex-wrap gap-1 max-w-[240px]">
-          {Array.isArray(project.tags) && project.tags.length > 0 ? (
-            project.tags.slice(0, 3).map((tag, idx) => (
-              <span
-                key={idx}
-                className="px-2 py-0.5 rounded-full text-[11px] bg-[#F5F3EE] text-[#77746D] border border-[#DEDAD2]"
-              >
-                #{tag}
-              </span>
-            ))
-          ) : (
-            <span className="text-xs text-[#77746D]/60">—</span>
-          )}
         </div>
       </td>
 
       {/* Updated / Created Date */}
-      <td className="py-4 px-4 whitespace-nowrap text-xs text-[#77746D] hidden lg:table-cell">
+      <td className="py-4 px-4 whitespace-nowrap text-xs text-[#77746D] hidden sm:table-cell">
         <span>{formatDate(project.updated_at || project.created_at)}</span>
       </td>
 

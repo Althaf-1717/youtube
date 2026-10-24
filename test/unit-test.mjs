@@ -34,11 +34,11 @@ assert(isValidUrl('http://example.com/res'), 'Valid HTTP URL');
 assert(!isValidUrl('javascript:alert(1)'), 'Reject non-http URL');
 assert(!isValidUrl('not-a-url'), 'Reject invalid string');
 
-console.log('\n--- 3. Testing Form Validation (Category Removed) ---');
+console.log('\n--- 3. Testing Form Validation (Video Number, Title, Link Only) ---');
 const validTest = validateProjectForm({
   video_number: 'Video 1',
-  title: 'Python Variables in Telugu',
-  video_url: 'https://youtube.com/watch?v=xyz123',
+  title: 'Canva Tutorial for Beginners',
+  video_url: 'https://youtube.com/shorts/xyz123',
 });
 assert(validTest.isValid, 'Valid project with "Video 1" passes validation');
 
@@ -87,7 +87,16 @@ assert(
   `True numeric ordering (1, 2, 3, 5, 10): got ${actualOrder.join(', ')}`
 );
 
-console.log('\n================================');
+console.log('\n--- 5. Testing CSV (Video Number, Title, Link) ---');
+const sample = [
+  { video_number: 1, title: 'Video One', video_url: 'https://youtube.com/v1', created_at: '2026-10-24' },
+];
+const exported = exportProjectsToCSV(sample);
+assert(exported.includes('video_number,title,video_url,created_at'), 'CSV has clean headers');
+const parsed = parseCSVToProjects(exported);
+assert(parsed.validProjects.length === 1 && parsed.validProjects[0].video_number === 1, 'CSV parsed correctly');
+
+console.log(`\n================================`);
 console.log(`Results: ${passCount} PASSED, ${failCount} FAILED`);
 console.log(`================================\n`);
 process.exit(failCount === 0 ? 0 : 1);

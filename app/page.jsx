@@ -335,9 +335,8 @@ export default function DashboardPage() {
                   <thead>
                     <tr className="bg-[#FAF8F5] border-b border-[#ECEAE4] text-[11px] font-bold uppercase tracking-wider text-[#77746D]">
                       <th className="py-3 px-4">Video</th>
-                      <th className="py-3 px-4">Project Title & Description</th>
-                      <th className="py-3 px-4 hidden md:table-cell">Tags</th>
-                      <th className="py-3 px-4 hidden lg:table-cell">Updated</th>
+                      <th className="py-3 px-4">Project Title</th>
+                      <th className="py-3 px-4 hidden sm:table-cell">Updated</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>

@@ -170,7 +170,7 @@ export default function CSVModal({ isOpen, onClose, projects = [], onImportCompl
               <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#ECEAE4] space-y-2 text-xs text-[#77746D]">
                 <div className="font-semibold text-[#292825]">Includes columns:</div>
                 <div className="font-mono text-[11px] text-[#292825]/80">
-                  video_number, title, description, video_url, category, tags, created_at
+                  video_number, title, video_url, created_at
                 </div>
               </div>
 
