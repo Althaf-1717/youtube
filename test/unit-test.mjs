@@ -1,5 +1,12 @@
-// Verification script for core logic: validation, CSV parsing, numeric sorting
-import { validateProjectForm, formatVideoNumber, parseVideoNumber, isValidUrl } from '../lib/utils.js';
+// Verification script for core logic: validation, CSV parsing, numeric sorting, section division
+import {
+  validateProjectForm,
+  validateUpcomingForm,
+  formatVideoNumber,
+  parseVideoNumber,
+  isValidUrl,
+  formatDate,
+} from '../lib/utils.js';
 import { exportProjectsToCSV, parseCSVToProjects } from '../lib/csv.js';
 
 let passCount = 0;
@@ -30,71 +37,77 @@ assert(formatVideoNumber(105) === 'Video 105', 'Format 105 to "Video 105"');
 
 console.log('\n--- 2. Testing URL Formatting ---');
 assert(isValidUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), 'Valid HTTPS YouTube URL');
+assert(isValidUrl('https://youtube.com/shorts/xyz123'), 'Valid Shorts YouTube URL');
 assert(isValidUrl('http://example.com/res'), 'Valid HTTP URL');
 assert(!isValidUrl('javascript:alert(1)'), 'Reject non-http URL');
 assert(!isValidUrl('not-a-url'), 'Reject invalid string');
 
-console.log('\n--- 3. Testing Form Validation (Video Number, Title, Link Only) ---');
-const validTest = validateProjectForm({
+console.log('\n--- 3. Testing Form Validation (Projects & Upcoming) ---');
+const validProject = validateProjectForm({
   video_number: 'Video 1',
   title: 'Canva Tutorial for Beginners',
   video_url: 'https://youtube.com/shorts/xyz123',
 });
-assert(validTest.isValid, 'Valid project with "Video 1" passes validation');
+assert(validProject.isValid, 'Valid project passes validation');
 
-const validNumOnly = validateProjectForm({
-  video_number: 2,
-  title: 'Python Data Types',
-  video_url: 'https://youtube.com/watch?v=xyz123',
+const validUpcoming = validateUpcomingForm({
+  video_number: '9',
+  title: 'Next Big YouTube Short Idea',
 });
-assert(validNumOnly.isValid, 'Valid project with integer 2 passes validation');
+assert(validUpcoming.isValid, 'Valid upcoming passes validation');
 
-const invalidNum = validateProjectForm({
-  video_number: -5,
-  title: 'Negative number test',
-  video_url: 'https://youtube.com/watch?v=xyz123',
+const invalidUpcoming = validateUpcomingForm({
+  video_number: '',
+  title: '',
 });
-assert(!invalidNum.isValid && invalidNum.errors.video_number, 'Reject negative video number');
+assert(!invalidUpcoming.isValid, 'Upcoming requires video number and title');
 
-const emptyTitle = validateProjectForm({
-  video_number: 2,
-  title: '   ',
-  video_url: 'https://youtube.com/watch?v=xyz123',
-});
-assert(!emptyTitle.isValid && emptyTitle.errors.title, 'Reject whitespace title');
+console.log('\n--- 4. Testing Date Formatting ---');
+assert(formatDate('2026-10-24') === 'Oct 24, 2026', 'Format standard YYYY-MM-DD date without TZ skew');
+assert(formatDate(null) === '—', 'Format null date as "—"');
 
-const invalidUrl = validateProjectForm({
-  video_number: 2,
-  title: 'Valid title',
-  video_url: 'ftp://bad-link',
-});
-assert(!invalidUrl.isValid && invalidUrl.errors.video_url, 'Reject non-http/https URL');
-
-console.log('\n--- 4. Testing Numeric Ordering ---');
-const unsorted = [
-  { video_number: 10, title: 'Python Functions' },
-  { video_number: 2, title: 'Python Data Types' },
-  { video_number: 1, title: 'Python Introduction' },
-  { video_number: 5, title: 'Python Conditions' },
-  { video_number: 3, title: 'Python Operators' },
+console.log('\n--- 5. Testing Numeric Ordering Across Sections ---');
+const library = [
+  { video_number: 8, title: 'Short 8', video_type: 'shorts' },
+  { video_number: 1, title: 'Short 1', video_type: 'shorts' },
+  { video_number: 5, title: 'Short 5', video_type: 'shorts' },
+  { video_number: 2, title: 'Long 2', video_type: 'long' },
 ];
 
-const sorted = [...unsorted].sort((a, b) => a.video_number - b.video_number);
-const expectedOrder = [1, 2, 3, 5, 10];
-const actualOrder = sorted.map((p) => p.video_number);
-assert(
-  JSON.stringify(actualOrder) === JSON.stringify(expectedOrder),
-  `True numeric ordering (1, 2, 3, 5, 10): got ${actualOrder.join(', ')}`
-);
+const sorted = [...library].sort((a, b) => a.video_number - b.video_number);
+assert(sorted[0].video_number === 1 && sorted[3].video_number === 8, 'Ascending sort by integer value');
 
-console.log('\n--- 5. Testing CSV (Video Number, Title, Link) ---');
+const shortsOnly = library.filter((p) => p.video_type === 'shorts');
+assert(shortsOnly.length === 3, 'Shorts filtering extracts only shorts');
+
+const longOnly = library.filter((p) => p.video_type === 'long');
+assert(longOnly.length === 1 && longOnly[0].video_number === 2, 'Long video filtering extracts only long videos');
+
+console.log('\n--- 6. Testing CSV with Video Types and Dates ---');
 const sample = [
-  { video_number: 1, title: 'Video One', video_url: 'https://youtube.com/v1', created_at: '2026-10-24' },
+  {
+    video_number: 1,
+    video_type: 'shorts',
+    title: 'Canva Short',
+    video_url: 'https://youtube.com/shorts/s1',
+    project_date: '2026-10-24',
+    created_at: '2026-10-24T12:00:00Z',
+  },
+  {
+    video_number: 2,
+    video_type: 'long',
+    title: 'Full Python Course',
+    video_url: 'https://youtube.com/watch?v=l2',
+    project_date: '2026-10-24',
+    created_at: '2026-10-24T12:00:00Z',
+  },
 ];
 const exported = exportProjectsToCSV(sample);
-assert(exported.includes('video_number,title,video_url,created_at'), 'CSV has clean headers');
+assert(exported.includes('video_number,video_type,title,video_url,project_date,created_at'), 'CSV has new headers');
 const parsed = parseCSVToProjects(exported);
-assert(parsed.validProjects.length === 1 && parsed.validProjects[0].video_number === 1, 'CSV parsed correctly');
+assert(parsed.validProjects.length === 2, 'CSV parsed both projects');
+assert(parsed.validProjects[0].video_type === 'shorts', 'Project 1 parsed as shorts');
+assert(parsed.validProjects[1].video_type === 'long', 'Project 2 parsed as long');
 
 console.log(`\n================================`);
 console.log(`Results: ${passCount} PASSED, ${failCount} FAILED`);

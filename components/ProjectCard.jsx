@@ -9,6 +9,8 @@ import {
   Check,
   Calendar,
   Clock,
+  Zap,
+  Film,
 } from 'lucide-react';
 import { formatVideoNumber, formatDate, isValidUrl } from '@/lib/utils';
 import { useToast } from './Toast';
@@ -16,6 +18,8 @@ import { useToast } from './Toast';
 export default function ProjectCard({ project, onEdit, onDelete }) {
   const { success, error } = useToast();
   const [copied, setCopied] = useState(false);
+
+  const isShort = project.video_type !== 'long';
 
   const handleCopyLink = async (e) => {
     e.stopPropagation();
@@ -49,10 +53,24 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
       className="group relative flex flex-col justify-between bg-white border border-[#DEDAD2] rounded-2xl p-5 sm:p-6 transition-all duration-200 hover:shadow-card hover:border-[#C4BFB5] cursor-pointer"
     >
       <div>
-        {/* Top Header: Video Number Badge & Quick Actions */}
+        {/* Top Header: Video Number Badge & Section Type & Actions */}
         <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#F7EBE6] border border-[#F1D7CE] text-[#C96442] font-semibold text-xs tracking-wide">
-            <span>{formatVideoNumber(project.video_number)}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#F7EBE6] border border-[#F1D7CE] text-[#C96442] font-semibold text-xs tracking-wide">
+              {formatVideoNumber(project.video_number)}
+            </span>
+
+            {/* Section Badge */}
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                isShort
+                  ? 'bg-[#FEF7EE] border-[#FBE5C8] text-[#B45309]'
+                  : 'bg-[#F0FDF4] border-[#DCFCE7] text-[#15803D]'
+              }`}
+            >
+              {isShort ? <Zap className="w-3 h-3" /> : <Film className="w-3 h-3" />}
+              <span>{isShort ? 'Short' : 'Long Video'}</span>
+            </span>
           </div>
 
           <div
@@ -95,9 +113,9 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
       {/* Footer Details */}
       <div className="pt-4 border-t border-[#ECEAE4] flex items-center justify-between text-xs text-[#77746D]">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1" title="Created date">
+          <span className="flex items-center gap-1" title="Project date">
             <Calendar className="w-3.5 h-3.5" />
-            {formatDate(project.created_at)}
+            {formatDate(project.project_date || project.created_at)}
           </span>
           {project.updated_at && project.updated_at !== project.created_at && (
             <span className="hidden sm:flex items-center gap-1" title="Last updated">

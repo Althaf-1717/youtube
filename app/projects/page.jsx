@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Plus, Download, RefreshCw, FolderKanban } from 'lucide-react';
+import { Plus, Download, RefreshCw, FolderKanban, Zap, Film, Layers } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import ProjectCard from '@/components/ProjectCard';
 import ProjectTableRow from '@/components/ProjectTableRow';
@@ -19,6 +19,7 @@ import { isValidUrl } from '@/lib/utils';
 function ProjectsContent() {
   const searchParams = useSearchParams();
   const initialSort = searchParams.get('sort') || 'video_number_asc';
+  const initialType = searchParams.get('type') || 'all';
 
   const { error: toastError, info } = useToast();
 
@@ -27,6 +28,7 @@ function ProjectsContent() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Filters & Sorting
+  const [videoType, setVideoType] = useState(initialType); // 'all' | 'shorts' | 'long'
   const [searchQuery, setSearchQuery] = useState('');
   const [exactNumber, setExactNumber] = useState(false);
   const [sortBy, setSortBy] = useState(initialSort);
@@ -45,6 +47,7 @@ function ProjectsContent() {
         searchQuery,
         exactNumber,
         sortBy,
+        videoType,
       });
 
       if (res.error) {
@@ -58,7 +61,7 @@ function ProjectsContent() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [searchQuery, exactNumber, sortBy, toastError]);
+  }, [searchQuery, exactNumber, sortBy, videoType, toastError]);
 
   useEffect(() => {
     loadProjects();
@@ -78,6 +81,7 @@ function ProjectsContent() {
     setSearchQuery('');
     setExactNumber(false);
     setSortBy('video_number_asc');
+    setVideoType('all');
   };
 
   return (
@@ -91,11 +95,11 @@ function ProjectsContent() {
             <div className="flex items-center gap-2 mb-1">
               <FolderKanban className="w-5 h-5 text-[#C96442]" />
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#292825]">
-                All Projects
+                Video Projects
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-[#77746D]">
-              Complete archive of YouTube videos with exact numeric ordering and deep search.
+              Organized by Shorts and Long Videos with exact numeric ordering and deep search.
             </p>
           </div>
 
@@ -122,6 +126,49 @@ function ProjectsContent() {
               <Plus className="w-4 h-4" />
               <span>Add Project</span>
             </button>
+          </div>
+        </div>
+
+        {/* Section Tabs: Shorts vs Long Videos vs All */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="inline-flex p-1 bg-[#ECEAE4] rounded-xl border border-[#DEDAD2]">
+            <button
+              onClick={() => setVideoType('all')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                videoType === 'all'
+                  ? 'bg-white text-[#292825] shadow-sm'
+                  : 'text-[#77746D] hover:text-[#292825]'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>All Projects</span>
+            </button>
+            <button
+              onClick={() => setVideoType('shorts')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                videoType === 'shorts'
+                  ? 'bg-white text-[#292825] shadow-sm'
+                  : 'text-[#77746D] hover:text-[#292825]'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-[#B45309]" />
+              <span>⚡ Shorts</span>
+            </button>
+            <button
+              onClick={() => setVideoType('long')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                videoType === 'long'
+                  ? 'bg-white text-[#292825] shadow-sm'
+                  : 'text-[#77746D] hover:text-[#292825]'
+              }`}
+            >
+              <Film className="w-3.5 h-3.5 text-[#15803D]" />
+              <span>🎬 Long Videos</span>
+            </button>
+          </div>
+
+          <div className="text-xs text-[#77746D] font-medium self-end sm:self-auto">
+            Showing <span className="font-semibold text-[#292825]">{projects.length}</span> videos
           </div>
         </div>
 
@@ -184,8 +231,9 @@ function ProjectsContent() {
                 <thead>
                   <tr className="bg-[#FAF8F5] border-b border-[#ECEAE4] text-[11px] font-bold uppercase tracking-wider text-[#77746D]">
                     <th className="py-3 px-4">Video</th>
+                    <th className="py-3 px-4">Section</th>
                     <th className="py-3 px-4">Project Title</th>
-                    <th className="py-3 px-4 hidden sm:table-cell">Updated</th>
+                    <th className="py-3 px-4 hidden sm:table-cell">Date</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -207,6 +255,7 @@ function ProjectsContent() {
 
       <ProjectModal
         isOpen={isAddModalOpen}
+        defaultVideoType={videoType === 'long' ? 'long' : 'shorts'}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={() => loadProjects()}
       />

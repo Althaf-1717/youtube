@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, AlertCircle } from 'lucide-react';
+import { X, Loader2, AlertCircle, Calendar, Film, Zap } from 'lucide-react';
 import { validateProjectForm, parseVideoNumber } from '@/lib/utils';
 import { createProject, updateProject, checkVideoNumberAvailable } from '@/lib/api/projects';
 import { useToast } from './Toast';
@@ -10,15 +10,20 @@ export default function ProjectModal({
   isOpen,
   onClose,
   project = null, // null for Add, project object for Edit
+  defaultVideoType = 'shorts',
   onSuccess,
 }) {
   const isEdit = Boolean(project?.id);
   const { success, error } = useToast();
 
+  const getTodayDate = () => new Date().toISOString().split('T')[0];
+
   const [formData, setFormData] = useState({
     video_number: '',
     title: '',
     video_url: '',
+    video_type: defaultVideoType || 'shorts',
+    project_date: getTodayDate(),
   });
 
   const [errors, setErrors] = useState({});
@@ -33,17 +38,23 @@ export default function ProjectModal({
           video_number: project.video_number ? `Video ${project.video_number}` : '',
           title: project.title ?? '',
           video_url: project.video_url ?? '',
+          video_type: project.video_type === 'long' ? 'long' : 'shorts',
+          project_date:
+            project.project_date ||
+            (project.created_at ? project.created_at.split('T')[0] : getTodayDate()),
         });
       } else {
         setFormData({
           video_number: '',
           title: '',
           video_url: '',
+          video_type: defaultVideoType === 'long' ? 'long' : 'shorts',
+          project_date: getTodayDate(),
         });
       }
       setErrors({});
     }
-  }, [isOpen, project]);
+  }, [isOpen, project, defaultVideoType]);
 
   if (!isOpen) return null;
 
@@ -58,6 +69,10 @@ export default function ProjectModal({
         return next;
       });
     }
+  };
+
+  const setVideoType = (type) => {
+    setFormData((prev) => ({ ...prev, video_type: type }));
   };
 
   const validate = async () => {
@@ -97,6 +112,8 @@ export default function ProjectModal({
 
     setIsSubmitting(true);
     const parsedNum = parseVideoNumber(formData.video_number);
+    const resolvedDate = formData.project_date?.trim() || getTodayDate();
+    const resolvedType = formData.video_type === 'long' ? 'long' : 'shorts';
 
     try {
       if (isEdit) {
@@ -104,6 +121,8 @@ export default function ProjectModal({
           title: formData.title,
           video_url: formData.video_url,
           video_number: parsedNum,
+          video_type: resolvedType,
+          project_date: resolvedDate,
         });
         if (res.error) {
           error(res.error);
@@ -118,13 +137,15 @@ export default function ProjectModal({
           title: formData.title,
           video_url: formData.video_url,
           video_number: parsedNum,
+          video_type: resolvedType,
+          project_date: resolvedDate,
         });
         if (res.error) {
           error(res.error);
           setIsSubmitting(false);
           return;
         }
-        success(`Saved Video ${parsedNum} to library!`);
+        success(`Saved Video ${parsedNum} to ${resolvedType === 'shorts' ? 'Shorts' : 'Long Videos'}!`);
         onSuccess?.(res.data);
 
         if (addAnother) {
@@ -133,6 +154,8 @@ export default function ProjectModal({
             video_number: `Video ${nextNum}`,
             title: '',
             video_url: '',
+            video_type: resolvedType,
+            project_date: getTodayDate(),
           });
           setErrors({});
         } else {
@@ -163,8 +186,8 @@ export default function ProjectModal({
             </h2>
             <p className="text-xs text-[#77746D] mt-0.5">
               {isEdit
-                ? 'Update video number, title, or link'
-                : 'Enter your YouTube video number, title, and link'}
+                ? 'Update video section, number, title, date, or link'
+                : 'Select video section, enter video number, title, date, and link'}
             </p>
           </div>
           <button
@@ -178,6 +201,42 @@ export default function ProjectModal({
 
         {/* Modal Form */}
         <form onSubmit={(e) => handleSubmit(e, false)} className="p-6 space-y-5">
+          {/* Section Selector: Shorts vs Long Videos */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#292825] mb-2">
+              Video Section <span className="text-[#C96442]">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3 p-1 bg-[#FAF8F5] border border-[#DEDAD2] rounded-xl">
+              <button
+                type="button"
+                onClick={() => setVideoType('shorts')}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
+                  formData.video_type === 'shorts'
+                    ? 'bg-[#C96442] text-white shadow-sm'
+                    : 'text-[#77746D] hover:text-[#292825] hover:bg-[#ECEAE4]'
+                }`}
+              >
+                <Zap className="w-4 h-4" />
+                <span>⚡ Shorts</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoType('long')}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
+                  formData.video_type === 'long'
+                    ? 'bg-[#C96442] text-white shadow-sm'
+                    : 'text-[#77746D] hover:text-[#292825] hover:bg-[#ECEAE4]'
+                }`}
+              >
+                <Film className="w-4 h-4" />
+                <span>🎬 Long Videos</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-[#77746D] mt-1.5">
+              Video will automatically be saved into the {formData.video_type === 'shorts' ? 'Shorts' : 'Long Videos'} section.
+            </p>
+          </div>
+
           {/* Video Number Input */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -219,6 +278,32 @@ export default function ProjectModal({
                 <span>{errors.video_number}</span>
               </p>
             )}
+          </div>
+
+          {/* Project Date */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label
+                htmlFor="project_date"
+                className="block text-xs font-semibold uppercase tracking-wider text-[#292825]"
+              >
+                Project Date
+              </label>
+              <span className="text-[11px] text-[#77746D]">
+                Defaults to today if empty
+              </span>
+            </div>
+            <div className="relative">
+              <input
+                id="project_date"
+                name="project_date"
+                type="date"
+                value={formData.project_date}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[#DEDAD2] bg-white hover:border-[#C4BFB5] text-sm text-[#292825] transition-all"
+                disabled={isSubmitting}
+              />
+            </div>
           </div>
 
           {/* Project Title */}

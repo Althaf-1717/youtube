@@ -1,15 +1,19 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Plus,
   Video,
   Hash,
   Clock,
-  Link2,
   Sparkles,
   Download,
   RefreshCw,
+  Zap,
+  Film,
+  Layers,
+  ArrowRight,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import SummaryCard from '@/components/SummaryCard';
@@ -31,6 +35,8 @@ export default function DashboardPage() {
   // State
   const [stats, setStats] = useState({
     totalProjects: 0,
+    totalShorts: 0,
+    totalLong: 0,
     latestVideoNumber: 0,
     recentlyUpdatedCount: 0,
     validLinksCount: 0,
@@ -43,6 +49,7 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Search & Filter State
+  const [videoType, setVideoType] = useState('all'); // 'all' | 'shorts' | 'long'
   const [searchQuery, setSearchQuery] = useState('');
   const [exactNumber, setExactNumber] = useState(false);
   const [sortBy, setSortBy] = useState('video_number_asc'); // Default: Video Number: Low to High
@@ -64,6 +71,7 @@ export default function DashboardPage() {
           searchQuery,
           exactNumber,
           sortBy,
+          videoType,
         }),
       ]);
 
@@ -84,7 +92,7 @@ export default function DashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [searchQuery, exactNumber, sortBy, toastError]);
+  }, [searchQuery, exactNumber, sortBy, videoType, toastError]);
 
   useEffect(() => {
     loadData();
@@ -105,6 +113,7 @@ export default function DashboardPage() {
     setSearchQuery('');
     setExactNumber(false);
     setSortBy('video_number_asc');
+    setVideoType('all');
   };
 
   return (
@@ -121,7 +130,7 @@ export default function DashboardPage() {
               Your Video Library
             </h1>
             <p className="text-sm text-[#77746D] mt-1 font-normal">
-              Organize every project, one video at a time.
+              Organize every YouTube project by Shorts and Long Videos.
             </p>
           </div>
 
@@ -164,6 +173,22 @@ export default function DashboardPage() {
               icon={Video}
             />
             <SummaryCard
+              title="⚡ Shorts Section"
+              value={stats.totalShorts}
+              subtitle="Short-form vertical videos"
+              icon={Zap}
+              badge="Shorts"
+              badgeColor="bg-[#FEF7EE] text-[#B45309]"
+            />
+            <SummaryCard
+              title="🎬 Long Videos"
+              value={stats.totalLong}
+              subtitle="Standard horizontal videos"
+              icon={Film}
+              badge="Videos"
+              badgeColor="bg-[#F0FDF4] text-[#15803D]"
+            />
+            <SummaryCard
               title="Latest Video Number"
               value={stats.latestVideoNumber ? `Video ${stats.latestVideoNumber}` : '—'}
               subtitle="Highest numbered project"
@@ -171,108 +196,80 @@ export default function DashboardPage() {
               badge={stats.latestVideoNumber ? 'Latest' : null}
               badgeColor="bg-[#F7EBE6] text-[#C96442]"
             />
-            <SummaryCard
-              title="Recently Updated"
-              value={stats.recentlyUpdatedCount}
-              subtitle="Modified within past 7 days"
-              icon={Clock}
-            />
-            <SummaryCard
-              title="Valid Resource Links"
-              value={stats.validLinksCount}
-              subtitle={`${
-                stats.totalProjects > 0
-                  ? Math.round((stats.validLinksCount / stats.totalProjects) * 100)
-                  : 0
-              }% with verified URLs`}
-              icon={Link2}
-            />
           </div>
         </section>
 
-        {/* Recently Added & Recently Updated */}
-        {(stats.recentlyAdded?.length > 0 || stats.recentlyUpdated?.length > 0) && (
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Recently Added */}
-            <div className="bg-white border border-[#DEDAD2] rounded-2xl p-5 shadow-subtle">
-              <div className="flex items-center justify-between mb-3.5 pb-2 border-b border-[#ECEAE4]">
-                <h3 className="text-sm font-bold text-[#292825] tracking-tight flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#C96442]" />
-                  <span>Recently Added</span>
-                </h3>
-                <span className="text-xs text-[#77746D]">Latest creations</span>
-              </div>
-              <div className="space-y-2.5">
-                {stats.recentlyAdded.slice(0, 3).map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => item.video_url && window.open(item.video_url, '_blank')}
-                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#FAF8F5] transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="px-2 py-0.5 rounded bg-[#F7EBE6] text-[#C96442] font-semibold text-xs shrink-0">
-                        {formatVideoNumber(item.video_number)}
-                      </span>
-                      <span className="text-xs font-medium text-[#292825] truncate group-hover:text-[#C96442] transition-colors">
-                        {item.title}
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-[#77746D] shrink-0 ml-2">
-                      {formatDate(item.created_at)}
-                    </span>
-                  </div>
-                ))}
-              </div>
+        {/* Upcoming Banner Shortcut */}
+        <div className="bg-gradient-to-r from-[#FAF8F5] to-[#F7EBE6] border border-[#ECEAE4] rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-subtle">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#C96442] text-white flex items-center justify-center shadow-subtle">
+              <Sparkles className="w-5 h-5" />
             </div>
-
-            {/* Recently Updated */}
-            <div className="bg-white border border-[#DEDAD2] rounded-2xl p-5 shadow-subtle">
-              <div className="flex items-center justify-between mb-3.5 pb-2 border-b border-[#ECEAE4]">
-                <h3 className="text-sm font-bold text-[#292825] tracking-tight flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#77746D]" />
-                  <span>Recently Updated</span>
-                </h3>
-                <span className="text-xs text-[#77746D]">Latest revisions</span>
-              </div>
-              <div className="space-y-2.5">
-                {stats.recentlyUpdated.slice(0, 3).map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => item.video_url && window.open(item.video_url, '_blank')}
-                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#FAF8F5] transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="px-2 py-0.5 rounded bg-[#ECEAE4] text-[#292825] font-semibold text-xs shrink-0">
-                        {formatVideoNumber(item.video_number)}
-                      </span>
-                      <span className="text-xs font-medium text-[#292825] truncate group-hover:text-[#C96442] transition-colors">
-                        {item.title}
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-[#77746D] shrink-0 ml-2">
-                      {formatDate(item.updated_at || item.created_at)}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            <div>
+              <h3 className="font-bold text-[#292825] text-sm sm:text-base">
+                Upcoming Video Ideas & Planning
+              </h3>
+              <p className="text-xs text-[#77746D]">
+                Draft prompts for voiceover and video editing before publishing to Projects.
+              </p>
             </div>
-          </section>
-        )}
+          </div>
+          <Link
+            href="/upcoming"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#DEDAD2] text-[#292825] hover:text-[#C96442] hover:border-[#C96442] text-xs font-semibold transition-all self-start sm:self-auto"
+          >
+            <span>Open Upcoming Bar</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
 
         {/* Complete Projects Section */}
         <section className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold text-[#292825] tracking-tight">
-                All Projects
+                Project Archive
               </h2>
               <p className="text-xs text-[#77746D]">
-                Sorted by video number in ascending order by default
+                Sorted by video number in ascending order
               </p>
             </div>
-            <div className="text-xs text-[#77746D] font-medium">
-              Showing <span className="font-semibold text-[#292825]">{projects.length}</span> of{' '}
-              <span className="font-semibold text-[#292825]">{stats.totalProjects}</span> projects
+
+            {/* Section Switcher Tabs */}
+            <div className="inline-flex p-1 bg-[#ECEAE4] rounded-xl border border-[#DEDAD2] self-start sm:self-auto">
+              <button
+                onClick={() => setVideoType('all')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  videoType === 'all'
+                    ? 'bg-white text-[#292825] shadow-sm'
+                    : 'text-[#77746D] hover:text-[#292825]'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>All</span>
+              </button>
+              <button
+                onClick={() => setVideoType('shorts')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  videoType === 'shorts'
+                    ? 'bg-white text-[#292825] shadow-sm'
+                    : 'text-[#77746D] hover:text-[#292825]'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 text-[#B45309]" />
+                <span>⚡ Shorts ({stats.totalShorts})</span>
+              </button>
+              <button
+                onClick={() => setVideoType('long')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  videoType === 'long'
+                    ? 'bg-white text-[#292825] shadow-sm'
+                    : 'text-[#77746D] hover:text-[#292825]'
+                }`}
+              >
+                <Film className="w-3.5 h-3.5 text-[#15803D]" />
+                <span>🎬 Long Videos ({stats.totalLong})</span>
+              </button>
             </div>
           </div>
 
@@ -335,8 +332,9 @@ export default function DashboardPage() {
                   <thead>
                     <tr className="bg-[#FAF8F5] border-b border-[#ECEAE4] text-[11px] font-bold uppercase tracking-wider text-[#77746D]">
                       <th className="py-3 px-4">Video</th>
+                      <th className="py-3 px-4">Section</th>
                       <th className="py-3 px-4">Project Title</th>
-                      <th className="py-3 px-4 hidden sm:table-cell">Updated</th>
+                      <th className="py-3 px-4 hidden sm:table-cell">Date</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -360,6 +358,7 @@ export default function DashboardPage() {
       {/* Add Project Modal */}
       <ProjectModal
         isOpen={isAddModalOpen}
+        defaultVideoType={videoType === 'long' ? 'long' : 'shorts'}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={() => {
           loadData();

@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ExternalLink, Edit3, Trash2, Copy, Check } from 'lucide-react';
+import { ExternalLink, Edit3, Trash2, Copy, Check, Zap, Film } from 'lucide-react';
 import { formatVideoNumber, formatDate, isValidUrl } from '@/lib/utils';
 import { useToast } from './Toast';
 
 export default function ProjectTableRow({ project, onEdit, onDelete }) {
   const { success, error } = useToast();
   const [copied, setCopied] = useState(false);
+
+  const isShort = project.video_type !== 'long';
 
   const handleCopyLink = async (e) => {
     e.stopPropagation();
@@ -46,6 +48,20 @@ export default function ProjectTableRow({ project, onEdit, onDelete }) {
         </span>
       </td>
 
+      {/* Section Badge */}
+      <td className="py-4 px-4 whitespace-nowrap">
+        <span
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium border ${
+            isShort
+              ? 'bg-[#FEF7EE] border-[#FBE5C8] text-[#B45309]'
+              : 'bg-[#F0FDF4] border-[#DCFCE7] text-[#15803D]'
+          }`}
+        >
+          {isShort ? <Zap className="w-3 h-3" /> : <Film className="w-3 h-3" />}
+          <span>{isShort ? 'Short' : 'Long'}</span>
+        </span>
+      </td>
+
       {/* Title */}
       <td className="py-4 px-4 max-w-md sm:max-w-xl">
         <div className="font-semibold text-sm text-[#292825] group-hover:text-[#C96442] transition-colors line-clamp-2">
@@ -53,9 +69,9 @@ export default function ProjectTableRow({ project, onEdit, onDelete }) {
         </div>
       </td>
 
-      {/* Updated / Created Date */}
+      {/* Project Date */}
       <td className="py-4 px-4 whitespace-nowrap text-xs text-[#77746D] hidden sm:table-cell">
-        <span>{formatDate(project.updated_at || project.created_at)}</span>
+        <span>{formatDate(project.project_date || project.created_at)}</span>
       </td>
 
       {/* Action Buttons */}

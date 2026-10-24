@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, Zap, Film } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { validateProjectForm, parseVideoNumber } from '@/lib/utils';
 import { createProject, checkVideoNumberAvailable } from '@/lib/api/projects';
@@ -13,10 +13,14 @@ export default function NewProjectPage() {
   const router = useRouter();
   const { success, error } = useToast();
 
+  const getTodayDate = () => new Date().toISOString().split('T')[0];
+
   const [formData, setFormData] = useState({
     video_number: '',
     title: '',
     video_url: '',
+    video_type: 'shorts',
+    project_date: getTodayDate(),
   });
 
   const [errors, setErrors] = useState({});
@@ -34,6 +38,10 @@ export default function NewProjectPage() {
         return next;
       });
     }
+  };
+
+  const setVideoType = (type) => {
+    setFormData((prev) => ({ ...prev, video_type: type }));
   };
 
   const validate = async () => {
@@ -69,12 +77,16 @@ export default function NewProjectPage() {
 
     setIsSubmitting(true);
     const parsedNum = parseVideoNumber(formData.video_number);
+    const resolvedDate = formData.project_date?.trim() || getTodayDate();
+    const resolvedType = formData.video_type === 'long' ? 'long' : 'shorts';
 
     try {
       const res = await createProject({
         title: formData.title,
         video_url: formData.video_url,
         video_number: parsedNum,
+        video_type: resolvedType,
+        project_date: resolvedDate,
       });
       if (res.error) {
         error(res.error);
@@ -82,7 +94,7 @@ export default function NewProjectPage() {
         return;
       }
 
-      success(`Successfully added Video ${parsedNum} to library!`);
+      success(`Successfully added Video ${parsedNum} to ${resolvedType === 'shorts' ? 'Shorts' : 'Long Videos'}!`);
 
       if (addAnother) {
         const nextNum = parsedNum + 1;
@@ -90,6 +102,8 @@ export default function NewProjectPage() {
           video_number: `Video ${nextNum}`,
           title: '',
           video_url: '',
+          video_type: resolvedType,
+          project_date: getTodayDate(),
         });
         setErrors({});
       } else {
@@ -119,13 +133,47 @@ export default function NewProjectPage() {
               Add New Project
             </h1>
             <p className="text-xs text-[#77746D]">
-              Record your video number, title, and link for your YouTube library.
+              Choose section, video number, title, date, and link for your YouTube library.
             </p>
           </div>
         </div>
 
         <div className="bg-white border border-[#DEDAD2] rounded-2xl p-6 sm:p-8 shadow-card">
           <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
+            {/* Video Section Toggle */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#292825] mb-2">
+                Video Section <span className="text-[#C96442]">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3 p-1 bg-[#FAF8F5] border border-[#DEDAD2] rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setVideoType('shorts')}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
+                    formData.video_type === 'shorts'
+                      ? 'bg-[#C96442] text-white shadow-sm'
+                      : 'text-[#77746D] hover:text-[#292825] hover:bg-[#ECEAE4]'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>⚡ Shorts</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVideoType('long')}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
+                    formData.video_type === 'long'
+                      ? 'bg-[#C96442] text-white shadow-sm'
+                      : 'text-[#77746D] hover:text-[#292825] hover:bg-[#ECEAE4]'
+                  }`}
+                >
+                  <Film className="w-4 h-4" />
+                  <span>🎬 Long Videos</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Video Number */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label
@@ -168,6 +216,31 @@ export default function NewProjectPage() {
               )}
             </div>
 
+            {/* Project Date */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label
+                  htmlFor="project_date"
+                  className="block text-xs font-semibold uppercase tracking-wider text-[#292825]"
+                >
+                  Project Date
+                </label>
+                <span className="text-[11px] text-[#77746D]">
+                  Defaults to today if empty
+                </span>
+              </div>
+              <input
+                id="project_date"
+                name="project_date"
+                type="date"
+                value={formData.project_date}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-[#DEDAD2] bg-white hover:border-[#C4BFB5] text-sm text-[#292825] transition-all"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* Project Title */}
             <div>
               <label
                 htmlFor="title"
@@ -198,6 +271,7 @@ export default function NewProjectPage() {
               )}
             </div>
 
+            {/* Video URL */}
             <div>
               <label
                 htmlFor="video_url"

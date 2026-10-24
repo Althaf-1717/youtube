@@ -6,14 +6,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   FolderKanban,
+  Sparkles,
   PlusCircle,
   Clock,
   Settings,
   LogOut,
   Menu,
   X,
-  ExternalLink,
-  Video,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -55,6 +54,13 @@ export default function Sidebar({ onOpenAddModal }) {
       href: '/projects',
       icon: FolderKanban,
       active: pathname === '/projects' && !pathname.includes('recent'),
+    },
+    {
+      label: 'Upcoming Bar',
+      href: '/upcoming',
+      icon: Sparkles,
+      active: pathname === '/upcoming',
+      badge: 'New',
     },
     {
       label: 'Add New Project',
@@ -164,19 +170,26 @@ export default function Sidebar({ onOpenAddModal }) {
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
-                  'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+                  'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
                   item.active
                     ? 'bg-[#ECEAE4] text-[#292825] font-semibold'
                     : 'text-[#77746D] hover:text-[#292825] hover:bg-[#F5F3EE]'
                 )}
               >
-                <Icon
-                  className={cn(
-                    'w-4 h-4',
-                    item.active ? 'text-[#C96442]' : 'text-[#77746D]'
-                  )}
-                />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon
+                    className={cn(
+                      'w-4 h-4',
+                      item.active ? 'text-[#C96442]' : 'text-[#77746D]'
+                    )}
+                  />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#F7EBE6] text-[#C96442]">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
